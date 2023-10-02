@@ -7,7 +7,10 @@ import (
 
 // Page represents a CDP page.
 type Page struct {
-	ID string `json:"id"`
+	ID    string `json:"id"`
+	Title string `json:"title"`
+	URL   string `json:"url"`
+	Type  string `json:"type"`
 }
 
 // Client provides methods to interact with the CDP.
@@ -91,20 +94,8 @@ func (c *Client) ClosePage(page *Page) error {
 	return nil
 }
 
-type PageInfo struct {
-	ID       string `json:"id"`
-	Title    string `json:"title"`
-	URL      string `json:"url"`
-	Type     string `json:"type"`
-	Attached bool   `json:"attached"`
-	//OpenerID    string `json:"openerId"`
-	FrameID     string `json:"frameId"`
-	ParentID    string `json:"parentId"`
-	DevtoolsURL string `json:"devtoolsUrl"`
-}
-
 // ListPages returns a slice of open pages along with additional information.
-func (c *Client) ListPages() ([]*PageInfo, error) {
+func (c *Client) ListPages() ([]*Page, error) {
 	listPagesCmd := map[string]interface{}{
 		"id":     4,
 		"method": "Target.getTargets",
@@ -124,7 +115,7 @@ func (c *Client) ListPages() ([]*PageInfo, error) {
 		return nil, errors.New("failed to parse targetInfos array")
 	}
 
-	pages := make([]*PageInfo, 0)
+	pages := make([]*Page, 0)
 
 	for _, targetInfo := range targetInfos {
 		targetInfoMap, ok := targetInfo.(map[string]interface{})
@@ -142,7 +133,7 @@ func (c *Client) ListPages() ([]*PageInfo, error) {
 			continue
 		}
 
-		pageInfo := &PageInfo{
+		pageInfo := &Page{
 			ID:    targetID,
 			Title: targetInfoMap["title"].(string),
 			URL:   targetInfoMap["url"].(string),
@@ -153,6 +144,22 @@ func (c *Client) ListPages() ([]*PageInfo, error) {
 	}
 
 	return pages, nil
+}
+
+// GetPageByID retrieves a page by its ID.
+func (c *Client) GetPageByID(pageID string) (*Page, error) {
+	pages, err := c.ListPages()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, pageInfo := range pages {
+		if pageInfo.ID == pageID {
+			return pageInfo, nil
+		}
+	}
+
+	return nil, errors.New("page not found")
 }
 
 func (c *Client) sendCommand(command map[string]interface{}) (map[string]interface{}, error) {
