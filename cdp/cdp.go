@@ -1,10 +1,13 @@
 package cdp
 
 import (
+	"encoding/json"
 	"errors"
-	"github.com/go-rod/rod"
-	"github.com/go-rod/rod/lib/launcher"
+	"fmt"
 	"github.com/gorilla/websocket"
+	"io/ioutil"
+	"net/http"
+	"os/exec"
 )
 
 // Page represents a CDP page.
@@ -25,14 +28,51 @@ func NewClient(conn *websocket.Conn) *Client {
 	return &Client{conn}
 }
 
-// StartChromium uses rod to start chromium and extract
-// the ControlURL to connect with WebSocket
+// StartChromium starts a headless Chromium instance and returns the WebSocket Debugger URL.
 func StartChromium() (string, error) {
-	u := launcher.New().Bin("/usr/bin/chromium").MustLaunch()
+	// Command to start Chromium in headless mode
+	cmd := exec.Command("chromium", "--headless", "--disable-gpu", "--remote-debugging-port=9222")
+	cmd.Stderr = nil // Set to nil to silence stderr
 
-	rod.New().ControlURL(u).MustConnect()
+	// Start the Chromium process
+	err := cmd.Start()
+	if err != nil {
+		return "", fmt.Errorf("failed to start Chromium: %v", err)
+	}
 
-	return u, nil
+	// Get the WebSocket Debugger URL
+	devToolsURL, err := getWebSocketDebuggerURL()
+	if err != nil {
+		return "", err
+	}
+
+	return devToolsURL, nil
+}
+
+// getWebSocketDebuggerURL makes a request to obtain the WebSocket Debugger URL
+func getWebSocketDebuggerURL() (string, error) {
+	resp, err := http.Get("http://127.0.0.1:9222/json/version")
+	if err != nil {
+		return "", fmt.Errorf("failed to retrieve WebSocket Debugger URL: %v", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("failed to read response body: %v", err)
+	}
+
+	var result struct {
+		WebSocketDebuggerURL string `json:"webSocketDebuggerUrl"`
+	}
+	err = json.Unmarshal(body, &result)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse JSON response: %v", err)
+	}
+
+	fmt.Println(result.WebSocketDebuggerURL)
+
+	return result.WebSocketDebuggerURL, nil
 }
 
 // CreatePage creates a new page and returns its ID.
