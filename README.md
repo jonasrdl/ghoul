@@ -1,6 +1,11 @@
 # ghoul - Chrome DevTools Protocol wrapper for Golang
 
-This is a Go client for interacting with the Chrome DevTools Protocol (CDP). It provides methods for creating and managing CDP pages.
+Ghoul is a DevTools driver built on the foundation of the [Chrome DevTools Protocol](https://chromedevtools.github.io/devtools-protocol/).   
+It's designed to simplify web automation and scraping tasks, offering flexibility for both experienced and novice developers.
+
+> [!IMPORTANT]   
+> This project is still under active development, and not in a production ready state. Currently only creating, getting and deleting web pages is possible.   
+> More features like screenshotting, navigation control, user-friendly API, user agent control, improved headless configuration will follow.
 
 ## Official Documentation
 You can find the official Chrome Developer Protocol (CDP) [here](https://chromedevtools.github.io/devtools-protocol/).
