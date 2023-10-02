@@ -1,6 +1,6 @@
 package main
 
-// This file is mainly in use for testing currently
+// This file is mainly in use for testing currently (therefore the linter is deactivated here)
 
 import (
 	"context"
