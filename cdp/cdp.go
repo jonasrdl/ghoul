@@ -2,6 +2,8 @@ package cdp
 
 import (
 	"errors"
+	"github.com/go-rod/rod"
+	"github.com/go-rod/rod/lib/launcher"
 	"github.com/gorilla/websocket"
 )
 
@@ -21,6 +23,16 @@ type Client struct {
 // NewClient creates a new CDP client.
 func NewClient(conn *websocket.Conn) *Client {
 	return &Client{conn}
+}
+
+// StartChromium uses rod to start chromium and extract
+// the ControlURL to connect with WebSocket
+func StartChromium() (string, error) {
+	u := launcher.New().Bin("/usr/bin/chromium").MustLaunch()
+
+	rod.New().ControlURL(u).MustConnect()
+
+	return u, nil
 }
 
 // CreatePage creates a new page and returns its ID.

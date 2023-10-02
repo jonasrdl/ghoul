@@ -12,11 +12,14 @@ import (
 )
 
 func main() {
+	devToolsURL, err := cdp.StartChromium()
+	if err != nil {
+		fmt.Println("ERROR:", err)
+	}
+
 	ctx := context.Background()
 
-	chromiumWsURL := "ws://127.0.0.1:9222/devtools/browser/ae0b92a8-3fdb-48f1-81f4-52c17650239c"
-
-	conn, _, err := websocket.DefaultDialer.DialContext(ctx, chromiumWsURL, nil)
+	conn, _, err := websocket.DefaultDialer.DialContext(ctx, devToolsURL, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
