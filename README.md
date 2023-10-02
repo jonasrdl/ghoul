@@ -2,6 +2,9 @@
 
 This is a Go client for interacting with the Chrome DevTools Protocol (CDP). It provides methods for creating and managing CDP pages.
 
+## Official Documentation
+You can find the official Chrome Developer Protocol (CDP) [here](https://chromedevtools.github.io/devtools-protocol/).
+
 ## Installation
 
 To use ghoul, you need to have Go installed and set up a Go module for your project. Then, you can add the client as a dependency:
