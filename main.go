@@ -1,20 +1,22 @@
 package main
 
+// This file is mainly in use for testing currently
+
 import (
 	"context"
-	"log"
-	"time"
-
+	"fmt"
 	"github.com/gorilla/websocket"
 	"github.com/jonasrdl/ghoul/cdp"
+	"log"
+	"time"
 )
 
 func main() {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+	ctx := context.Background()
 
-	devToolsURL := "ws://127.0.0.1:9222/devtools/browser/43acd9dc-d954-47a0-884b-678f82df26f0"
-	conn, _, err := websocket.DefaultDialer.DialContext(ctx, devToolsURL, nil)
+	chromiumWsURL := "ws://127.0.0.1:9222/devtools/browser/ae0b92a8-3fdb-48f1-81f4-52c17650239c"
+
+	conn, _, err := websocket.DefaultDialer.DialContext(ctx, chromiumWsURL, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -29,18 +31,27 @@ func main() {
 	}
 	log.Printf("Created page with ID: %s\n", page.ID)
 
-	// Navigate to a URL.
-	/* err = client.Navigate(page, "https://google.de")
+	pages, err := client.ListPages()
 	if err != nil {
-		log.Fatalf("Error navigating: %v", err)
-	} */
+		log.Fatalf("Error listing pages: %v", err)
+	}
+
+	fmt.Println("Open Pages:")
+	for _, page := range pages {
+		fmt.Printf("Page ID: %s\n", page.ID)
+		fmt.Printf("Title: %s\n", page.Title)
+		fmt.Printf("URL: %s\n", page.URL)
+		fmt.Printf("Type: %s\n", page.Type)
+		fmt.Println("------------------------------------")
+	}
 
 	// Wait for 3 seconds.
-	time.Sleep(3 * time.Second)
+	time.Sleep(10 * time.Second)
 
 	// Close the page.
 	err = client.ClosePage(page)
 	if err != nil {
 		log.Fatalf("Error closing page: %v", err)
 	}
+	fmt.Printf("Closed page with ID: %s\n", page.ID)
 }

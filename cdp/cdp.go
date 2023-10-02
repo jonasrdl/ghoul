@@ -1,6 +1,9 @@
 package cdp
 
-import "github.com/gorilla/websocket"
+import (
+	"errors"
+	"github.com/gorilla/websocket"
+)
 
 // Page represents a CDP page.
 type Page struct {
@@ -86,6 +89,70 @@ func (c *Client) ClosePage(page *Page) error {
 	}
 
 	return nil
+}
+
+type PageInfo struct {
+	ID       string `json:"id"`
+	Title    string `json:"title"`
+	URL      string `json:"url"`
+	Type     string `json:"type"`
+	Attached bool   `json:"attached"`
+	//OpenerID    string `json:"openerId"`
+	FrameID     string `json:"frameId"`
+	ParentID    string `json:"parentId"`
+	DevtoolsURL string `json:"devtoolsUrl"`
+}
+
+// ListPages returns a slice of open pages along with additional information.
+func (c *Client) ListPages() ([]*PageInfo, error) {
+	listPagesCmd := map[string]interface{}{
+		"id":     4,
+		"method": "Target.getTargets",
+	}
+
+	response, err := c.sendCommand(listPagesCmd)
+	if err != nil {
+		return nil, err
+	}
+
+	if response["error"] != nil {
+		return nil, parseError(response["error"])
+	}
+
+	targetInfos, ok := response["result"].(map[string]interface{})["targetInfos"].([]interface{})
+	if !ok {
+		return nil, errors.New("failed to parse targetInfos array")
+	}
+
+	pages := make([]*PageInfo, 0)
+
+	for _, targetInfo := range targetInfos {
+		targetInfoMap, ok := targetInfo.(map[string]interface{})
+		if !ok {
+			continue
+		}
+
+		targetType, ok := targetInfoMap["type"].(string)
+		if !ok || targetType != "page" {
+			continue
+		}
+
+		targetID, ok := targetInfoMap["targetId"].(string)
+		if !ok {
+			continue
+		}
+
+		pageInfo := &PageInfo{
+			ID:    targetID,
+			Title: targetInfoMap["title"].(string),
+			URL:   targetInfoMap["url"].(string),
+			Type:  targetInfoMap["type"].(string),
+		}
+
+		pages = append(pages, pageInfo)
+	}
+
+	return pages, nil
 }
 
 func (c *Client) sendCommand(command map[string]interface{}) (map[string]interface{}, error) {
