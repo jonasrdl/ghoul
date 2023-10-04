@@ -5,7 +5,10 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"os/exec"
+	"os/signal"
+	"syscall"
 )
 
 // StartChromium starts a headless Chromium instance and returns the WebSocket Debugger URL.
@@ -25,6 +28,9 @@ func StartChromium() (string, error) {
 	if err != nil {
 		return "", err
 	}
+
+	// Automatically clean up Chromium process when the parent process exits
+	go cleanupOnExit(cmd)
 
 	return devToolsURL, nil
 }
@@ -53,6 +59,21 @@ func getWebSocketDebuggerURL() (string, error) {
 	fmt.Println(result.WebSocketDebuggerURL)
 
 	return result.WebSocketDebuggerURL, nil
+}
+
+// cleanupOnExit monitors the parent process and
+// automatically kills the specified command when the parent process exits
+// or receives termination signals (SIGINT, SIGTERM).
+func cleanupOnExit(cmd *exec.Cmd) {
+	// Create a channel to listen for signals
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+
+	// Wait for signals or parent process exit
+	<-sigCh
+
+	// Kill chromium
+	_ = cmd.Process.Kill()
 }
 
 type CommandError struct {
