@@ -1,8 +1,10 @@
 package cdp
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/gorilla/websocket"
 	"io"
 	"net/http"
 	"os"
@@ -11,28 +13,33 @@ import (
 	"syscall"
 )
 
-// StartChromium starts a headless Chromium instance and returns the WebSocket Debugger URL.
-func StartChromium() (string, error) {
-	// Command to start Chromium in headless mode
+// StartChromiumAndConnect starts a headless Chromium instance and returns a client
+// for interacting with it via the WebSocket connection.
+func StartChromiumAndConnect() (*Client, error) {
 	cmd := exec.Command("chromium", "--headless", "--disable-gpu", "--remote-debugging-port=9222")
-	cmd.Stderr = nil // Set to nil to silence stderr
+	cmd.Stderr = nil
 
-	// Start the Chromium process
 	err := cmd.Start()
 	if err != nil {
-		return "", fmt.Errorf("failed to start Chromium: %v", err)
+		return nil, err
 	}
+
+	// Automatically clean up Chromium process when the parent process exits
+	cleanupOnExit(cmd)
 
 	// Get the WebSocket Debugger URL
 	devToolsURL, err := getWebSocketDebuggerURL()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	// Automatically clean up Chromium process when the parent process exits
-	go cleanupOnExit(cmd)
+	// Connect to the WebSocket
+	conn, _, err := websocket.DefaultDialer.DialContext(context.Background(), devToolsURL, nil)
+	if err != nil {
+		return nil, err
+	}
 
-	return devToolsURL, nil
+	return NewClient(conn), nil
 }
 
 // getWebSocketDebuggerURL makes a request to obtain the WebSocket Debugger URL
@@ -70,10 +77,10 @@ func cleanupOnExit(cmd *exec.Cmd) {
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 
 	// Wait for signals or parent process exit
-	<-sigCh
-
-	// Kill chromium
-	_ = cmd.Process.Kill()
+	go func() {
+		<-sigCh
+		_ = cmd.Process.Kill()
+	}()
 }
 
 type CommandError struct {

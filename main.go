@@ -1,31 +1,19 @@
 package main
 
-// This file is mainly in use for testing currently (therefore the linter is deactivated here)
-
 import (
-	"context"
 	"fmt"
-	"github.com/gorilla/websocket"
 	"github.com/jonasrdl/ghoul/cdp"
 	"log"
 	"time"
 )
 
 func main() {
-	devToolsURL, err := cdp.StartChromium()
+	client, err := cdp.StartChromiumAndConnect()
 	if err != nil {
 		fmt.Println("ERROR:", err)
+		return
 	}
-
-	ctx := context.Background()
-
-	conn, _, err := websocket.DefaultDialer.DialContext(ctx, devToolsURL, nil)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer conn.Close()
-
-	client := cdp.NewClient(conn)
+	defer client.Close()
 
 	// Create a new page.
 	page, err := client.CreatePage("https://google.de")
