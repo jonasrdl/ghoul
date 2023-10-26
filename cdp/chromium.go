@@ -4,13 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/gorilla/websocket"
 	"io"
 	"net/http"
 	"os"
 	"os/exec"
 	"os/signal"
 	"syscall"
+
+	"github.com/gorilla/websocket"
 )
 
 // StartChromiumAndConnect starts a headless Chromium instance and returns a client
@@ -34,10 +35,11 @@ func StartChromiumAndConnect() (*Client, error) {
 	}
 
 	// Connect to the WebSocket
-	conn, _, err := websocket.DefaultDialer.DialContext(context.Background(), devToolsURL, nil)
+	conn, resp, err := websocket.DefaultDialer.DialContext(context.Background(), devToolsURL, nil)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to connect to WebSocket: %v", err)
 	}
+	defer resp.Body.Close()
 
 	return NewClient(conn), nil
 }
